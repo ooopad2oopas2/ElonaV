@@ -412,3 +412,72 @@ contract ElonaV {
             bool active,
             uint32 regionCode,
             uint8 riskTier,
+            uint256 totalSnapshots,
+            int256 cumulativeNetFlowBps,
+            int256 rollingNetFlowBps
+        )
+    {
+        InstitutionMeta storage m = _institutions[instId];
+        InstitutionAggregates storage a = _aggregates[instId];
+        active = m.active;
+        regionCode = m.regionCode;
+        riskTier = m.riskTier;
+        totalSnapshots = a.totalSnapshots;
+        cumulativeNetFlowBps = a.cumulativeNetFlowBps;
+        rollingNetFlowBps = a.rollingNetFlowBps;
+    }
+
+    function governanceConfig()
+        external
+        view
+        returns (
+            address gov,
+            address oracle,
+            address sink,
+            address guard,
+            uint256 fee
+        )
+    {
+        gov = governance;
+        oracle = flowOracle;
+        sink = feeSink;
+        guard = sentinel;
+        fee = snapshotFeeWei;
+    }
+
+    // -------------------------------------------------------------------------
+    // Extended analytics views (padding for rich off-chain usage)
+    // -------------------------------------------------------------------------
+
+    function institutionSnapshotRange(uint256 instId, uint256 fromIdx, uint256 toIdx)
+        external
+        view
+        instExists(instId)
+        returns (TrendSnapshot[] memory range)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (fromIdx > toIdx || toIdx > arr.length) revert ELN_IndexOutOfRange();
+        uint256 len = toIdx - fromIdx;
+        range = new TrendSnapshot[](len);
+        for (uint256 i = 0; i < len; i++) {
+            range[i] = arr[fromIdx + i];
+        }
+    }
+
+    function institutionWindowBounds(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (uint64 windowStart, uint64 windowEnd)
+    {
+        InstitutionAggregates storage ag = _aggregates[instId];
+        windowStart = ag.rollingWindowStart;
+        windowEnd = ag.lastTimestamp;
+    }
+
+    function institutionRiskBucket(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (uint8 bucket)
+    {
