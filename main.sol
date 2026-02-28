@@ -1102,3 +1102,72 @@ contract ElonaV {
         return arr[0].timestamp;
     }
 
+    function lastSnapshotTimestamp(uint256 instId) external view instExists(instId) returns (uint64) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return 0;
+        return arr[arr.length - 1].timestamp;
+    }
+
+    function sumNetFlowInRange(uint256 instId, uint256 fromIdx, uint256 toIdx)
+        external
+        view
+        instExists(instId)
+        returns (int256 sum)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (fromIdx > toIdx || toIdx >= arr.length) revert ELN_IndexOutOfRange();
+        for (uint256 i = fromIdx; i <= toIdx; i++) {
+            sum += arr[i].netFlowBps;
+        }
+    }
+
+    function sumSentimentInRange(uint256 instId, uint256 fromIdx, uint256 toIdx)
+        external
+        view
+        instExists(instId)
+        returns (int256 sum)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (fromIdx > toIdx || toIdx >= arr.length) revert ELN_IndexOutOfRange();
+        for (uint256 i = fromIdx; i <= toIdx; i++) {
+            sum += arr[i].sentimentScore;
+        }
+    }
+
+    function countActiveInstitutions() external view returns (uint256 n) {
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active) n++;
+        }
+    }
+
+    function countByRegion(uint32 regionCode) external view returns (uint256 n) {
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active && _institutions[i].regionCode == regionCode) n++;
+        }
+    }
+
+    function countByRiskTier(uint8 tier) external view returns (uint256 n) {
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active && _institutions[i].riskTier == tier) n++;
+        }
+    }
+
+    function totalSnapshotsAcrossAll() external view returns (uint256 total) {
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active) total += _snapshots[i].length;
+        }
+    }
+
+    function cumulativeFlowByRegion(uint32 regionCode) external view returns (int256 total) {
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active && _institutions[i].regionCode == regionCode) {
+                total += _aggregates[i].cumulativeNetFlowBps;
+            }
+        }
+    }
+
+    function cumulativeFlowByRiskTier(uint8 tier) external view returns (int256 total) {
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active && _institutions[i].riskTier == tier) {
+                total += _aggregates[i].cumulativeNetFlowBps;
+            }
