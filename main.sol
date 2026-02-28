@@ -1033,3 +1033,72 @@ contract ElonaV {
 
     function getMetaPrimaryTag(uint256 instId) external view instExists(instId) returns (bytes32) {
         return _institutions[instId].primaryTag;
+    }
+
+    function getAggCumulative(uint256 instId) external view instExists(instId) returns (int256) {
+        return _aggregates[instId].cumulativeNetFlowBps;
+    }
+
+    function getAggTotalSnapshots(uint256 instId) external view instExists(instId) returns (uint256) {
+        return _aggregates[instId].totalSnapshots;
+    }
+
+    function getAggLastIndex(uint256 instId) external view instExists(instId) returns (uint256) {
+        return _aggregates[instId].lastSnapshotIndex;
+    }
+
+    function getAggLastTs(uint256 instId) external view instExists(instId) returns (uint64) {
+        return _aggregates[instId].lastTimestamp;
+    }
+
+    function getAggRollingStart(uint256 instId) external view instExists(instId) returns (uint64) {
+        return _aggregates[instId].rollingWindowStart;
+    }
+
+    function getAggRollingCount(uint256 instId) external view instExists(instId) returns (uint256) {
+        return _aggregates[instId].rollingSnapshotCount;
+    }
+
+    function getAggRollingFlow(uint256 instId) external view instExists(instId) returns (int256) {
+        return _aggregates[instId].rollingNetFlowBps;
+    }
+
+    function snapshotNotionalAt(uint256 instId, uint256 index)
+        external
+        view
+        instExists(instId)
+        returns (uint64)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (index >= arr.length) revert ELN_IndexOutOfRange();
+        return arr[index].notionalUsdScaled;
+    }
+
+    function snapshotHorizonAt(uint256 instId, uint256 index)
+        external
+        view
+        instExists(instId)
+        returns (uint32)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (index >= arr.length) revert ELN_IndexOutOfRange();
+        return arr[index].horizonDays;
+    }
+
+    function snapshotLabelAt(uint256 instId, uint256 index)
+        external
+        view
+        instExists(instId)
+        returns (bytes32)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (index >= arr.length) revert ELN_IndexOutOfRange();
+        return arr[index].labelHash;
+    }
+
+    function firstSnapshotTimestamp(uint256 instId) external view instExists(instId) returns (uint64) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return 0;
+        return arr[0].timestamp;
+    }
+
