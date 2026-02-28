@@ -481,3 +481,72 @@ contract ElonaV {
         instExists(instId)
         returns (uint8 bucket)
     {
+        InstitutionMeta storage m = _institutions[instId];
+        uint8 tier = m.riskTier;
+        if (tier <= 3) bucket = 1;
+        else if (tier <= 7) bucket = 2;
+        else bucket = 3;
+    }
+
+    function rollingNetFlowScaled(uint256 instId, uint256 scale)
+        external
+        view
+        instExists(instId)
+        returns (int256 scaled)
+    {
+        InstitutionAggregates storage ag = _aggregates[instId];
+        if (scale == 0) {
+            scaled = ag.rollingNetFlowBps;
+        } else {
+            scaled = ag.rollingNetFlowBps * int256(scale);
+        }
+    }
+
+    function hasReporter(address who) external view returns (bool) {
+        return isReporter[who];
+    }
+
+    function institutionTags(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (bytes32 primary, bytes32[] memory tags)
+    {
+        InstitutionMeta storage m = _institutions[instId];
+        primary = m.primaryTag;
+        tags = m.tags;
+    }
+
+    function institutionRegionAndTier(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (uint32 regionCode, uint8 riskTier)
+    {
+        InstitutionMeta storage m = _institutions[instId];
+        regionCode = m.regionCode;
+        riskTier = m.riskTier;
+    }
+
+    function institutionCumulativeNetFlow(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (int256)
+    {
+        return _aggregates[instId].cumulativeNetFlowBps;
+    }
+
+    function institutionRollingSnapshotCount(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (uint256)
+    {
+        return _aggregates[instId].rollingSnapshotCount;
+    }
+
+    function institutionLastTimestamp(uint256 instId)
+        external
+        view
+        instExists(instId)
