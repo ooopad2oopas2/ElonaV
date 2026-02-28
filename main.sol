@@ -205,3 +205,72 @@ contract ElonaV {
         if (extraTags.length > 0) {
             if (extraTags.length > 32) revert ELN_ArrayTooLong();
             for (uint256 i = 0; i < extraTags.length; i++) {
+                meta.tags.push(extraTags[i]);
+            }
+        }
+
+        _controllerForInst[instId] = controller;
+        _instIdByAddress[controller] = instId;
+
+        emit InstitutionOnboarded(instId, controller, regionCode, riskTier, primaryTag);
+    }
+
+    function setInstitutionTags(
+        uint256 instId,
+        bytes32 primaryTag,
+        bytes32[] calldata tags
+    ) external onlyGovernance instExists(instId) {
+        if (tags.length > 32) revert ELN_ArrayTooLong();
+        InstitutionMeta storage meta = _institutions[instId];
+        meta.primaryTag = primaryTag;
+        delete meta.tags;
+        for (uint256 i = 0; i < tags.length; i++) {
+            meta.tags.push(tags[i]);
+        }
+        emit TagsUpdated(instId, tags);
+    }
+
+    function deactivateInstitution(uint256 instId) external onlyGovernance instExists(instId) {
+        _institutions[instId].active = false;
+        emit InstitutionDeactivated(instId);
+    }
+
+    // Snapshot recording
+
+    function recordTrendSnapshot(
+        uint256 instId,
+        int32 netFlowBps,
+        uint64 notionalUsdScaled,
+        int32 sentimentScore,
+        uint32 horizonDays,
+        bytes32 labelHash
+    ) external payable notHalted onlyReporter instExists(instId) {
+        if (snapshotFeeWei > 0 && msg.value < snapshotFeeWei) revert ELN_FeeRequired();
+        if (labelHash == bytes32(0)) revert ELN_InvalidLabel();
+
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length + 1 > ELN_MAX_SNAPSHOTS_PER_INST) revert ELN_MaxSnapshots();
+
+        uint64 ts = uint64(block.timestamp);
+        uint256 idx = arr.length;
+
+        arr.push(
+            TrendSnapshot({
+                timestamp: ts,
+                netFlowBps: netFlowBps,
+                notionalUsdScaled: notionalUsdScaled,
+                sentimentScore: sentimentScore,
+                horizonDays: horizonDays,
+                labelHash: labelHash
+            })
+        );
+
+        InstitutionAggregates storage aggr = _aggregates[instId];
+        aggr.cumulativeNetFlowBps += netFlowBps;
+        aggr.totalSnapshots = aggr.totalSnapshots + 1;
+        aggr.lastSnapshotIndex = idx;
+        aggr.lastTimestamp = ts;
+
+        uint64 windowLength = uint64(ELN_WINDOW_DAYS * 1 days);
+        if (aggr.rollingWindowStart == 0) {
+            aggr.rollingWindowStart = ts > windowLength ? ts - windowLength : 0;
