@@ -619,3 +619,72 @@ contract ElonaV {
         external
         view
         instExists(instId)
+        returns (bytes32)
+    {
+        return _institutions[instId].primaryTag;
+    }
+
+    function viewAgg1(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (int256, uint256)
+    {
+        InstitutionAggregates storage a = _aggregates[instId];
+        return (a.cumulativeNetFlowBps, a.totalSnapshots);
+    }
+
+    function viewAgg2(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (int256, uint64)
+    {
+        InstitutionAggregates storage a = _aggregates[instId];
+        return (a.rollingNetFlowBps, a.lastTimestamp);
+    }
+
+    function viewAgg3(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (uint64, uint256)
+    {
+        InstitutionAggregates storage a = _aggregates[instId];
+        return (a.rollingWindowStart, a.rollingSnapshotCount);
+    }
+
+    function viewAgg4(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (uint256)
+    {
+        return _aggregates[instId].lastSnapshotIndex;
+    }
+
+    function viewFlags() external view returns (bool, uint256) {
+        return (halted, snapshotFeeWei);
+    }
+
+    // -------------------------------------------------------------------------
+    // Extended analytics and batch views for off-chain dashboards
+    // -------------------------------------------------------------------------
+
+    function getSnapshotBatch(uint256 instId, uint256 offset, uint256 limit)
+        external
+        view
+        instExists(instId)
+        returns (TrendSnapshot[] memory batch)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (offset >= arr.length) return new TrendSnapshot[](0);
+        if (limit > ELN_VIEW_BATCH) limit = ELN_VIEW_BATCH;
+        uint256 end = offset + limit;
+        if (end > arr.length) end = arr.length;
+        uint256 len = end - offset;
+        batch = new TrendSnapshot[](len);
+        for (uint256 i = 0; i < len; i++) {
+            batch[i] = arr[offset + i];
+        }
+    }
