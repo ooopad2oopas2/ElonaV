@@ -1654,3 +1654,72 @@ contract ElonaV {
         return arr[arr.length - 1].labelHash;
     }
 
+    function latestTs(uint256 instId) external view instExists(instId) returns (uint64) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return 0;
+        return arr[arr.length - 1].timestamp;
+    }
+
+    function getSnapshotStruct(uint256 instId, uint256 index)
+        external
+        view
+        instExists(instId)
+        returns (
+            uint64 ts,
+            int32 flowBps,
+            uint64 notional,
+            int32 sentiment,
+            uint32 horizon,
+            bytes32 label
+        )
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (index >= arr.length) revert ELN_IndexOutOfRange();
+        TrendSnapshot storage s = arr[index];
+        ts = s.timestamp;
+        flowBps = s.netFlowBps;
+        notional = s.notionalUsdScaled;
+        sentiment = s.sentimentScore;
+        horizon = s.horizonDays;
+        label = s.labelHash;
+    }
+
+    function getMetaStruct(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (
+            bool active_,
+            uint64 onboarded_,
+            uint32 region_,
+            uint8 risk_,
+            bytes32 primary_
+        )
+    {
+        InstitutionMeta storage m = _institutions[instId];
+        active_ = m.active;
+        onboarded_ = m.onboardedAt;
+        region_ = m.regionCode;
+        risk_ = m.riskTier;
+        primary_ = m.primaryTag;
+    }
+
+    function getAggStruct(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (
+            int256 cumulative_,
+            uint256 totalSnap_,
+            uint256 lastIdx_,
+            uint64 lastTs_,
+            uint64 rollStart_,
+            uint256 rollCount_,
+            int256 rollFlow_
+        )
+    {
+        InstitutionAggregates storage a = _aggregates[instId];
+        cumulative_ = a.cumulativeNetFlowBps;
+        totalSnap_ = a.totalSnapshots;
+        lastIdx_ = a.lastSnapshotIndex;
+        lastTs_ = a.lastTimestamp;
