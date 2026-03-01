@@ -1516,3 +1516,72 @@ contract ElonaV {
         returns (
             address gov,
             address oracle,
+            address sink,
+            address guard,
+            uint256 fee,
+            bool halted_
+        )
+    {
+        gov = governance;
+        oracle = flowOracle;
+        sink = feeSink;
+        guard = sentinel;
+        fee = snapshotFeeWei;
+        halted_ = halted;
+    }
+
+    function versionAndLimits()
+        external
+        pure
+        returns (
+            uint256 version,
+            uint256 maxInst,
+            uint256 maxSnapPerInst,
+            uint256 viewBatch,
+            uint256 windowDays_
+        )
+    {
+        version = ELN_VERSION;
+        maxInst = ELN_MAX_INSTITUTIONS;
+        maxSnapPerInst = ELN_MAX_SNAPSHOTS_PER_INST;
+        viewBatch = ELN_VIEW_BATCH;
+        windowDays_ = ELN_WINDOW_DAYS;
+    }
+
+    function getController(uint256 instId) external view instExists(instId) returns (address) {
+        return _controllerForInst[instId];
+    }
+
+    function instIdOf(address controller) external view returns (uint256) {
+        return _instIdByAddress[controller];
+    }
+
+    function isReporterAddr(address who) external view returns (bool) {
+        return isReporter[who];
+    }
+
+    function feeInWei() external view returns (uint256) {
+        return snapshotFeeWei;
+    }
+
+    function isHalted() external view returns (bool) {
+        return halted;
+    }
+
+    function totalInstitutionCount() external view returns (uint256) {
+        return institutionCount;
+    }
+
+    function snapshotLength(uint256 instId) external view instExists(instId) returns (uint256) {
+        return _snapshots[instId].length;
+    }
+
+    function tagsLength(uint256 instId) external view instExists(instId) returns (uint256) {
+        return _institutions[instId].tags.length;
+    }
+
+    function primaryTagOf(uint256 instId) external view instExists(instId) returns (bytes32) {
+        return _institutions[instId].primaryTag;
+    }
+
+    function regionOf(uint256 instId) external view instExists(instId) returns (uint32) {
