@@ -1792,3 +1792,72 @@ contract ElonaV {
         returns (TrendSnapshot[] memory slice)
     {
         TrendSnapshot[] storage arr = _snapshots[instId];
+        if (start >= arr.length) return new TrendSnapshot[](0);
+        if (length > ELN_VIEW_BATCH) length = ELN_VIEW_BATCH;
+        uint256 end = start + length;
+        if (end > arr.length) end = arr.length;
+        uint256 len = end - start;
+        slice = new TrendSnapshot[](len);
+        for (uint256 i = 0; i < len; i++) {
+            slice[i] = arr[start + i];
+        }
+    }
+
+    function elnConstants() external pure returns (uint256 v, uint256 maxI, uint256 maxS, uint256 vb, uint256 wd) {
+        v = ELN_VERSION;
+        maxI = ELN_MAX_INSTITUTIONS;
+        maxS = ELN_MAX_SNAPSHOTS_PER_INST;
+        vb = ELN_VIEW_BATCH;
+        wd = ELN_WINDOW_DAYS;
+    }
+
+    function requireFeeWei() external view returns (uint256) {
+        return snapshotFeeWei;
+    }
+
+    function platformStatus() external view returns (bool halted_, uint256 instCount_, uint256 fee_) {
+        halted_ = halted;
+        instCount_ = institutionCount;
+        fee_ = snapshotFeeWei;
+    }
+
+    function getRoleAddresses()
+        external
+        view
+        returns (address gov_, address oracle_, address sink_, address guard_)
+    {
+        gov_ = governance;
+        oracle_ = flowOracle;
+        sink_ = feeSink;
+        guard_ = sentinel;
+    }
+
+    function getLimits()
+        external
+        pure
+        returns (uint256 maxInst_, uint256 maxSnap_, uint256 viewBatch_)
+    {
+        maxInst_ = ELN_MAX_INSTITUTIONS;
+        maxSnap_ = ELN_MAX_SNAPSHOTS_PER_INST;
+        viewBatch_ = ELN_VIEW_BATCH;
+    }
+
+    // -------------------------------------------------------------------------
+    // ElonaV extensions (version 2 view layer)
+    // -------------------------------------------------------------------------
+
+    function elonaVVersion() external pure returns (uint256) {
+        return 2;
+    }
+
+    function contractName() external pure returns (string memory) {
+        return "ElonaV";
+    }
+
+    function institutionIdsBetween(uint256 fromId, uint256 toId)
+        external
+        view
+        returns (uint256[] memory ids)
+    {
+        if (fromId > toId || toId > institutionCount) return new uint256[](0);
+        uint256 len = toId - fromId + 1;
