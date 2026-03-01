@@ -1585,3 +1585,72 @@ contract ElonaV {
     }
 
     function regionOf(uint256 instId) external view instExists(instId) returns (uint32) {
+        return _institutions[instId].regionCode;
+    }
+
+    function riskTierOf(uint256 instId) external view instExists(instId) returns (uint8) {
+        return _institutions[instId].riskTier;
+    }
+
+    function onboardedAtOf(uint256 instId) external view instExists(instId) returns (uint64) {
+        return _institutions[instId].onboardedAt;
+    }
+
+    function cumulativeFlowOf(uint256 instId) external view instExists(instId) returns (int256) {
+        return _aggregates[instId].cumulativeNetFlowBps;
+    }
+
+    function rollingFlowOf(uint256 instId) external view instExists(instId) returns (int256) {
+        return _aggregates[instId].rollingNetFlowBps;
+    }
+
+    function lastSnapshotIndexOf(uint256 instId) external view instExists(instId) returns (uint256) {
+        return _aggregates[instId].lastSnapshotIndex;
+    }
+
+    function lastTimestampOf(uint256 instId) external view instExists(instId) returns (uint64) {
+        return _aggregates[instId].lastTimestamp;
+    }
+
+    function rollingWindowStartOf(uint256 instId) external view instExists(instId) returns (uint64) {
+        return _aggregates[instId].rollingWindowStart;
+    }
+
+    function rollingCountOf(uint256 instId) external view instExists(instId) returns (uint256) {
+        return _aggregates[instId].rollingSnapshotCount;
+    }
+
+    function totalSnapshotsOf(uint256 instId) external view instExists(instId) returns (uint256) {
+        return _aggregates[instId].totalSnapshots;
+    }
+
+    function latestFlow(uint256 instId) external view instExists(instId) returns (int32) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return 0;
+        return arr[arr.length - 1].netFlowBps;
+    }
+
+    function latestSentimentScore(uint256 instId) external view instExists(instId) returns (int32) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return 0;
+        return arr[arr.length - 1].sentimentScore;
+    }
+
+    function latestNotional(uint256 instId) external view instExists(instId) returns (uint64) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return 0;
+        return arr[arr.length - 1].notionalUsdScaled;
+    }
+
+    function latestHorizon(uint256 instId) external view instExists(instId) returns (uint32) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return 0;
+        return arr[arr.length - 1].horizonDays;
+    }
+
+    function latestLabel(uint256 instId) external view instExists(instId) returns (bytes32) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return bytes32(0);
+        return arr[arr.length - 1].labelHash;
+    }
+
