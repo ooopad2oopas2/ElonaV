@@ -1999,3 +1999,51 @@ contract ElonaV {
             if (_institutions[i].active) totalSnap += _snapshots[i].length;
         }
         if (totalSnap == 0 || lastN == 0) return new int32[](0);
+        if (lastN > ELN_VIEW_BATCH) lastN = ELN_VIEW_BATCH;
+        flows = new int32[](lastN);
+        uint256 filled;
+        for (uint256 i = institutionCount; i >= 1 && filled < lastN; i--) {
+            if (!_institutions[i].active) continue;
+            TrendSnapshot[] storage arr = _snapshots[i];
+            for (uint256 j = arr.length; j > 0 && filled < lastN; j--) {
+                flows[filled] = arr[j - 1].netFlowBps;
+                filled++;
+            }
+        }
+    }
+
+    function isElonaV() external pure returns (bool) {
+        return true;
+    }
+
+    function versionString() external pure returns (string memory) {
+        return "ElonaV.2";
+    }
+
+    function elonaVConfig()
+        external
+        view
+        returns (uint256 version_, bool halted_, uint256 instCount_, uint256 feeWei_)
+    {
+        version_ = ELN_VERSION;
+        halted_ = halted;
+        instCount_ = institutionCount;
+        feeWei_ = snapshotFeeWei;
+    }
+
+    function hasSnapshots(uint256 instId) external view instExists(instId) returns (bool) {
+        return _snapshots[instId].length > 0;
+    }
+
+    function firstAndLastSnapshotTimestamps(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (uint64 firstTs, uint64 lastTs)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return (0, 0);
+        firstTs = arr[0].timestamp;
+        lastTs = arr[arr.length - 1].timestamp;
+    }
+}
