@@ -1447,3 +1447,72 @@ contract ElonaV {
                 j++;
             } else if (hasAny) {
                 j++;
+            }
+        }
+    }
+
+    function riskTierList(uint256 offset, uint256 limit)
+        external
+        view
+        returns (uint8[] memory tiers)
+    {
+        if (limit > 32) limit = 32;
+        tiers = new uint8[](limit);
+        uint256 j;
+        for (uint8 t = 1; t <= 255 && j < limit; t++) {
+            bool hasAny;
+            for (uint256 i = 1; i <= institutionCount; i++) {
+                if (_institutions[i].active && _institutions[i].riskTier == t) {
+                    hasAny = true;
+                    break;
+                }
+            }
+            if (hasAny && j >= offset) {
+                tiers[j - offset] = t;
+                j++;
+            } else if (hasAny) {
+                j++;
+            }
+        }
+    }
+
+    function globalRollingFlow() external view returns (int256 total) {
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active) total += _aggregates[i].rollingNetFlowBps;
+        }
+    }
+
+    function canRecordSnapshot(uint256 instId) external view returns (bool) {
+        if (!_institutions[instId].active) return false;
+        if (_snapshots[instId].length >= ELN_MAX_SNAPSHOTS_PER_INST) return false;
+        return true;
+    }
+
+    function remainingSnapshotCapacity(uint256 instId) external view instExists(instId) returns (uint256) {
+        uint256 len = _snapshots[instId].length;
+        if (len >= ELN_MAX_SNAPSHOTS_PER_INST) return 0;
+        return ELN_MAX_SNAPSHOTS_PER_INST - len;
+    }
+
+    function institutionCountForRegion(uint32 regionCode) external view returns (uint256) {
+        uint256 n;
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active && _institutions[i].regionCode == regionCode) n++;
+        }
+        return n;
+    }
+
+    function institutionCountForRiskTier(uint8 tier) external view returns (uint256) {
+        uint256 n;
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active && _institutions[i].riskTier == tier) n++;
+        }
+        return n;
+    }
+
+    function getGovernanceConfig()
+        external
+        view
+        returns (
+            address gov,
+            address oracle,
