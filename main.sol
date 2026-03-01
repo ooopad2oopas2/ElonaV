@@ -1309,3 +1309,72 @@ contract ElonaV {
 
     function latestSnapshotFull(uint256 instId)
         external
+        view
+        instExists(instId)
+        returns (
+            uint64 timestamp,
+            int32 netFlowBps,
+            uint64 notionalUsdScaled,
+            int32 sentimentScore,
+            uint32 horizonDays,
+            bytes32 labelHash
+        )
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) revert ELN_InstitutionNotFound();
+        TrendSnapshot storage s = arr[arr.length - 1];
+        timestamp = s.timestamp;
+        netFlowBps = s.netFlowBps;
+        notionalUsdScaled = s.notionalUsdScaled;
+        sentimentScore = s.sentimentScore;
+        horizonDays = s.horizonDays;
+        labelHash = s.labelHash;
+    }
+
+    function institutionFlowTrend(uint256 instId, uint256 lastN)
+        external
+        view
+        instExists(instId)
+        returns (int32[] memory flows)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (lastN > arr.length) lastN = arr.length;
+        if (lastN > ELN_VIEW_BATCH) lastN = ELN_VIEW_BATCH;
+        flows = new int32[](lastN);
+        uint256 start = arr.length - lastN;
+        for (uint256 i = 0; i < lastN; i++) {
+            flows[i] = arr[start + i].netFlowBps;
+        }
+    }
+
+    function institutionSentimentTrend(uint256 instId, uint256 lastN)
+        external
+        view
+        instExists(instId)
+        returns (int32[] memory sentiments)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (lastN > arr.length) lastN = arr.length;
+        if (lastN > ELN_VIEW_BATCH) lastN = ELN_VIEW_BATCH;
+        sentiments = new int32[](lastN);
+        uint256 start = arr.length - lastN;
+        for (uint256 i = 0; i < lastN; i++) {
+            sentiments[i] = arr[start + i].sentimentScore;
+        }
+    }
+
+    function institutionTimestamps(uint256 instId, uint256 offset, uint256 limit)
+        external
+        view
+        instExists(instId)
+        returns (uint64[] memory timestamps)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (offset >= arr.length) return new uint64[](0);
+        if (limit > ELN_VIEW_BATCH) limit = ELN_VIEW_BATCH;
+        uint256 end = offset + limit;
+        if (end > arr.length) end = arr.length;
+        uint256 len = end - offset;
+        timestamps = new uint64[](len);
+        for (uint256 i = 0; i < len; i++) {
+            timestamps[i] = arr[offset + i].timestamp;
