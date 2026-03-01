@@ -1378,3 +1378,72 @@ contract ElonaV {
         timestamps = new uint64[](len);
         for (uint256 i = 0; i < len; i++) {
             timestamps[i] = arr[offset + i].timestamp;
+        }
+    }
+
+    function minNetFlowInRange(uint256 instId, uint256 fromIdx, uint256 toIdx)
+        external
+        view
+        instExists(instId)
+        returns (int32 minFlow)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (fromIdx > toIdx || toIdx >= arr.length) revert ELN_IndexOutOfRange();
+        minFlow = arr[fromIdx].netFlowBps;
+        for (uint256 i = fromIdx + 1; i <= toIdx; i++) {
+            int32 v = arr[i].netFlowBps;
+            if (v < minFlow) minFlow = v;
+        }
+    }
+
+    function maxNetFlowInRange(uint256 instId, uint256 fromIdx, uint256 toIdx)
+        external
+        view
+        instExists(instId)
+        returns (int32 maxFlow)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (fromIdx > toIdx || toIdx >= arr.length) revert ELN_IndexOutOfRange();
+        maxFlow = arr[fromIdx].netFlowBps;
+        for (uint256 i = fromIdx + 1; i <= toIdx; i++) {
+            int32 v = arr[i].netFlowBps;
+            if (v > maxFlow) maxFlow = v;
+        }
+    }
+
+    function avgSentimentInRange(uint256 instId, uint256 fromIdx, uint256 toIdx)
+        external
+        view
+        instExists(instId)
+        returns (int256 sum, uint256 count)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (fromIdx > toIdx || toIdx >= arr.length) revert ELN_IndexOutOfRange();
+        count = toIdx - fromIdx + 1;
+        for (uint256 i = fromIdx; i <= toIdx; i++) {
+            sum += arr[i].sentimentScore;
+        }
+    }
+
+    function regionList(uint256 offset, uint256 limit)
+        external
+        view
+        returns (uint32[] memory regionCodes)
+    {
+        uint256 maxRegions = 256;
+        if (limit > maxRegions) limit = maxRegions;
+        regionCodes = new uint32[](limit);
+        uint256 j;
+        for (uint32 r = 1; r <= 255 && j < limit; r++) {
+            bool hasAny;
+            for (uint256 i = 1; i <= institutionCount; i++) {
+                if (_institutions[i].active && _institutions[i].regionCode == r) {
+                    hasAny = true;
+                    break;
+                }
+            }
+            if (hasAny && j >= offset) {
+                regionCodes[j - offset] = r;
+                j++;
+            } else if (hasAny) {
+                j++;
