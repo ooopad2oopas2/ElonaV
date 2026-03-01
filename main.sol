@@ -1240,3 +1240,72 @@ contract ElonaV {
             uint256 instCount
         )
     {
+        gov = governance;
+        oracle = flowOracle;
+        sink = feeSink;
+        guard = sentinel;
+        feeWei_ = snapshotFeeWei;
+        halted_ = halted;
+        instCount = institutionCount;
+    }
+
+    function elnViewBatchSize() external pure returns (uint256) {
+        return ELN_VIEW_BATCH;
+    }
+
+    function isValidInstId(uint256 instId) external view returns (bool) {
+        return instId >= 1 && instId <= institutionCount && _institutions[instId].active;
+    }
+
+    // -------------------------------------------------------------------------
+    // Further analytics views for institutional trend dashboards
+    // -------------------------------------------------------------------------
+
+    function getInstitutionMetaBlob(uint256 instId)
+        external
+        view
+        instExists(instId)
+        returns (
+            bool active_,
+            uint64 onboardedAt_,
+            uint32 regionCode_,
+            uint8 riskTier_,
+            bytes32 primaryTag_,
+            uint256 tagsLength
+        )
+    {
+        InstitutionMeta storage m = _institutions[instId];
+        active_ = m.active;
+        onboardedAt_ = m.onboardedAt;
+        regionCode_ = m.regionCode;
+        riskTier_ = m.riskTier;
+        primaryTag_ = m.primaryTag;
+        tagsLength = m.tags.length;
+    }
+
+    function getSnapshotAtFull(uint256 instId, uint256 index)
+        external
+        view
+        instExists(instId)
+        returns (
+            uint64 timestamp,
+            int32 netFlowBps,
+            uint64 notionalUsdScaled,
+            int32 sentimentScore,
+            uint32 horizonDays,
+            bytes32 labelHash
+        )
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (index >= arr.length) revert ELN_IndexOutOfRange();
+        TrendSnapshot storage s = arr[index];
+        timestamp = s.timestamp;
+        netFlowBps = s.netFlowBps;
+        notionalUsdScaled = s.notionalUsdScaled;
+        sentimentScore = s.sentimentScore;
+        horizonDays = s.horizonDays;
+        labelHash = s.labelHash;
+    }
+
+    function latestSnapshotFull(uint256 instId)
+        external
