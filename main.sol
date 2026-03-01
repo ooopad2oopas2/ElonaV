@@ -1930,3 +1930,72 @@ contract ElonaV {
     function maxSentimentInWindow(uint256 instId) external view instExists(instId) returns (int32 maxS) {
         TrendSnapshot[] storage arr = _snapshots[instId];
         if (arr.length == 0) return 0;
+        maxS = arr[0].sentimentScore;
+        for (uint256 i = 1; i < arr.length; i++) {
+            if (arr[i].sentimentScore > maxS) maxS = arr[i].sentimentScore;
+        }
+    }
+
+    function totalNotionalScaledInRange(uint256 instId, uint256 fromIdx, uint256 toIdx)
+        external
+        view
+        instExists(instId)
+        returns (uint256 total)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (fromIdx > toIdx || toIdx >= arr.length) revert ELN_IndexOutOfRange();
+        for (uint256 i = fromIdx; i <= toIdx; i++) {
+            total += arr[i].notionalUsdScaled;
+        }
+    }
+
+    function regionCodesPresent() external view returns (uint32[] memory codes) {
+        uint256 maxR = 256;
+        uint256[] memory counts = new uint256[](maxR);
+        uint256 distinct;
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (!_institutions[i].active) continue;
+            uint32 r = _institutions[i].regionCode;
+            if (r < maxR && counts[r] == 0) {
+                counts[r] = 1;
+                distinct++;
+            }
+        }
+        codes = new uint32[](distinct);
+        uint256 j;
+        for (uint256 r = 0; r < maxR && j < distinct; r++) {
+            if (counts[r] != 0) {
+                codes[j] = uint32(r);
+                j++;
+            }
+        }
+    }
+
+    function riskTiersPresent() external view returns (uint8[] memory tiers) {
+        uint256 maxT = 256;
+        uint256[] memory counts = new uint256[](maxT);
+        uint256 distinct;
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (!_institutions[i].active) continue;
+            uint8 t = _institutions[i].riskTier;
+            if (counts[t] == 0) {
+                counts[t] = 1;
+                distinct++;
+            }
+        }
+        tiers = new uint8[](distinct);
+        uint256 j;
+        for (uint256 t = 0; t < maxT && j < distinct; t++) {
+            if (counts[t] != 0) {
+                tiers[j] = uint8(t);
+                j++;
+            }
+        }
+    }
+
+    function globalFlowTrend(uint256 lastN) external view returns (int32[] memory flows) {
+        uint256 totalSnap;
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active) totalSnap += _snapshots[i].length;
+        }
+        if (totalSnap == 0 || lastN == 0) return new int32[](0);
