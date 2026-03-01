@@ -1861,3 +1861,72 @@ contract ElonaV {
     {
         if (fromId > toId || toId > institutionCount) return new uint256[](0);
         uint256 len = toId - fromId + 1;
+        if (len > ELN_VIEW_BATCH) len = ELN_VIEW_BATCH;
+        ids = new uint256[](len);
+        for (uint256 i = 0; i < len; i++) {
+            ids[i] = fromId + i;
+        }
+    }
+
+    function snapshotCountForRegion(uint32 regionCode) external view returns (uint256 total) {
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active && _institutions[i].regionCode == regionCode) {
+                total += _snapshots[i].length;
+            }
+        }
+    }
+
+    function snapshotCountForRiskTier(uint8 tier) external view returns (uint256 total) {
+        for (uint256 i = 1; i <= institutionCount; i++) {
+            if (_institutions[i].active && _institutions[i].riskTier == tier) {
+                total += _snapshots[i].length;
+            }
+        }
+    }
+
+    function averageSentimentLastN(uint256 instId, uint256 n)
+        external
+        view
+        instExists(instId)
+        returns (int256 sum, uint256 count)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return (0, 0);
+        if (n > arr.length) n = arr.length;
+        if (n > ELN_VIEW_BATCH) n = ELN_VIEW_BATCH;
+        uint256 start = arr.length - n;
+        for (uint256 i = start; i < arr.length; i++) {
+            sum += arr[i].sentimentScore;
+        }
+        count = n;
+    }
+
+    function averageNetFlowLastN(uint256 instId, uint256 n)
+        external
+        view
+        instExists(instId)
+        returns (int256 sum, uint256 count)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return (0, 0);
+        if (n > arr.length) n = arr.length;
+        if (n > ELN_VIEW_BATCH) n = ELN_VIEW_BATCH;
+        uint256 start = arr.length - n;
+        for (uint256 i = start; i < arr.length; i++) {
+            sum += arr[i].netFlowBps;
+        }
+        count = n;
+    }
+
+    function minSentimentInWindow(uint256 instId) external view instExists(instId) returns (int32 minS) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return 0;
+        minS = arr[0].sentimentScore;
+        for (uint256 i = 1; i < arr.length; i++) {
+            if (arr[i].sentimentScore < minS) minS = arr[i].sentimentScore;
+        }
+    }
+
+    function maxSentimentInWindow(uint256 instId) external view instExists(instId) returns (int32 maxS) {
+        TrendSnapshot[] storage arr = _snapshots[instId];
+        if (arr.length == 0) return 0;
