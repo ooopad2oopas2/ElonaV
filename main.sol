@@ -1723,3 +1723,72 @@ contract ElonaV {
         totalSnap_ = a.totalSnapshots;
         lastIdx_ = a.lastSnapshotIndex;
         lastTs_ = a.lastTimestamp;
+        rollStart_ = a.rollingWindowStart;
+        rollCount_ = a.rollingSnapshotCount;
+        rollFlow_ = a.rollingNetFlowBps;
+    }
+
+    function checkReporterAndInst(address reporter, uint256 instId)
+        external
+        view
+        returns (bool canReport, bool instActive)
+    {
+        canReport = isReporter[reporter];
+        instActive = _institutions[instId].active;
+    }
+
+    function feeRequiredForSnapshot() external view returns (uint256) {
+        return snapshotFeeWei;
+    }
+
+    function domainSaltView() external pure returns (bytes32) {
+        return ELN_DOMAIN_SALT;
+    }
+
+    function flowFeedSaltView() external pure returns (bytes32) {
+        return ELN_FLOW_FEED_SALT;
+    }
+
+    function governanceView() external view returns (address) {
+        return governance;
+    }
+
+    function flowOracleView() external view returns (address) {
+        return flowOracle;
+    }
+
+    function feeSinkView() external view returns (address) {
+        return feeSink;
+    }
+
+    function sentinelView() external view returns (address) {
+        return sentinel;
+    }
+
+    function activeInstitutionIds(uint256 maxReturn)
+        external
+        view
+        returns (uint256[] memory ids)
+    {
+        if (maxReturn > ELN_VIEW_BATCH) maxReturn = ELN_VIEW_BATCH;
+        uint256 n;
+        for (uint256 i = 1; i <= institutionCount && n < maxReturn; i++) {
+            if (_institutions[i].active) n++;
+        }
+        ids = new uint256[](n);
+        uint256 j;
+        for (uint256 i = 1; i <= institutionCount && j < n; i++) {
+            if (_institutions[i].active) {
+                ids[j] = i;
+                j++;
+            }
+        }
+    }
+
+    function snapshotSlice(uint256 instId, uint256 start, uint256 length)
+        external
+        view
+        instExists(instId)
+        returns (TrendSnapshot[] memory slice)
+    {
+        TrendSnapshot[] storage arr = _snapshots[instId];
